@@ -7,10 +7,7 @@ var uuid = require('node-uuid');
 
 exports.issueRequestHandler = function(event, context, callback) {
 
-    // stoppoint arrivals for StopPointId = 940GZZLUASL
-    var endpoint = 'https://api.tfl.gov.uk/StopPoint/940GZZLUASL/Arrivals?app_id=51696fcf&app_key=d1105f80ed4ceaf95b9f230d88e2770f';
-
-    request(endpoint, function(error, response, body) {
+    request(event.endpoint, function(error, response, body) {
 
 		if(!error && response.statusCode == 200) {
 
@@ -23,9 +20,10 @@ exports.issueRequestHandler = function(event, context, callback) {
 			for(var i in json) {
 
 				json[i].uuid = uuid.v4(); 						// decorate item with UUID
-				json[i].stopPointId = '940GZZLUASL'; 			// decorate item with StopPointId
 				json[i].responseTime = responseTime;			// decorate item with time of response
 				json[i].awsRequestId = context.awsRequestId;	// decorate item with Lambda request ID
+				// TODO decorate item with StopPointId (parse from endpoint?)
+				//json[i].stopPointId = '940GZZLUASL';
 				
 				// Dynnamo does not like empty strings, omit them
 				var item = _.omitBy(json[i], function(str) { return str === ''; });
@@ -34,7 +32,7 @@ exports.issueRequestHandler = function(event, context, callback) {
 
 				// Build DynamoDB entry
 				var params = {
-				    TableName: "StopPointArrivals",
+				    TableName: event.table,
 				    Item: item
 				};
 
